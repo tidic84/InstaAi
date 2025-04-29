@@ -8,26 +8,29 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { formatDistanceToNow } from "date-fns"
 import { fr } from "date-fns/locale"
-import { Send } from "lucide-react"
+import { Send, RefreshCw } from "lucide-react"
 
-interface ConversationPageProps {
+interface PageProps {
   params: {
-    accountId: string
-    conversationId: string
+    accountId: string;
+    conversationId: string;
   }
 }
 
-export default async function ConversationPage({ params }: ConversationPageProps) {
-  // Extraire les paramètres de l'URL
-  const accountId = params.accountId
-  const conversationId = params.conversationId
-  
-  // Récupérer la session utilisateur
+export default async function ConversationPage({ params }: PageProps) {
   const session = await getServerSessionSafe()
 
   if (!session) {
     redirect("/login")
   }
+
+  // Vérification des paramètres
+  if (!params?.accountId || !params?.conversationId) {
+    console.error("Paramètres manquants:", params)
+    redirect("/dashboard/messages")
+  }
+
+  const { accountId, conversationId } = params
 
   console.log("Tentative de récupération des messages pour la conversation:", conversationId)
 
@@ -103,7 +106,16 @@ export default async function ConversationPage({ params }: ConversationPageProps
       <DashboardHeader
         heading={`Conversation avec ${conversation.participantUsername}`}
         text={`Via ${account.username}`}
-      />
+      >
+        <form action="/api/messages/fetch" method="POST">
+          <input type="hidden" name="accountId" value={accountId} />
+          <input type="hidden" name="conversationId" value={conversationId} />
+          <Button type="submit" variant="outline">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Rafraîchir les messages
+          </Button>
+        </form>
+      </DashboardHeader>
       
       <div className="flex flex-col h-[calc(100vh-200px)]">
         <Card className="flex-1 overflow-hidden flex flex-col">

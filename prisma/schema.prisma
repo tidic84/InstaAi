@@ -68,7 +68,8 @@ model InstagramAccount {
   password    String
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now())
+  instagramUserId String?  @map("instagram_user_id")
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversations  Conversation[]
@@ -83,6 +84,7 @@ model Conversation {
   lastMessageAt       DateTime @default(now())
   createdAt           DateTime @default(now())
   updatedAt           DateTime @default(now())
+  instagramThreadId   String?
 
   instagramAccount InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
   messages         Message[]
