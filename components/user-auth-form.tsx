@@ -75,38 +75,31 @@ export function UserAuthForm({ isRegister = false }) {
           router.push("/dashboard")
         }
       } else {
-        // Logique de connexion
-        console.log("Attempting to sign in with email:", email)
-        
-        // Vérifier si l'utilisateur existe
-        const userCheck = await fetch(`/api/check-user?email=${encodeURIComponent(email)}`);
-        const userExists = await userCheck.json();
-        
-        if (!userExists.exists) {
-          setError("Cette adresse email n'est pas inscrite. Veuillez vous inscrire d'abord.");
-          setIsLoading(false);
-          return;
-        }
-        
-        const signInResult = await signIn("email", {
+        // Ne pas logger les informations sensibles
+        const signInResult = await signIn("credentials", {
           email,
+          password,
           redirect: false,
-          callbackUrl: searchParams?.get("from") || "/dashboard",
-        })
+          callbackUrl: "/dashboard"
+        });
 
-        console.log("Sign in result:", signInResult)
-
-        if (!signInResult?.ok) {
-          setError("Erreur de connexion: Nous n'avons pas pu vous connecter. Veuillez réessayer.");
-        } else {
-          setSuccess("Email envoyé: Vérifiez votre boîte de réception pour le lien de connexion.");
+        if (signInResult?.error) {
+          // Message d'erreur générique sans détails techniques
+          setError("Email ou mot de passe incorrect.");
+        } else if (signInResult?.ok) {
+          setSuccess("Connexion réussie! Redirection en cours...");
+          
+          // Redirection vers le tableau de bord
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 800);
         }
       }
     } catch (error) {
-      console.error("Auth error:", error)
+      // Message d'erreur générique sans détails techniques
       setError("Une erreur s'est produite. Veuillez réessayer.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 

@@ -18,7 +18,8 @@ export async function RecentActivity({ userId }: RecentActivityProps) {
         },
       },
       orderBy: {
-        sentAt: "desc", // Utilisation du champ sentAt ajouté au schéma
+        // Utiliser createdAt au lieu de sentAt qui n'existe pas encore dans la DB
+        createdAt: "desc",
       },
       take: 5,
       include: {
@@ -59,7 +60,8 @@ export async function RecentActivity({ userId }: RecentActivityProps) {
                     </p>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(message.sentAt), { addSuffix: true, locale: fr })}
+                    {/* Utiliser createdAt au lieu de sentAt */}
+                    {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true, locale: fr })}
                   </div>
                 </div>
               ))}

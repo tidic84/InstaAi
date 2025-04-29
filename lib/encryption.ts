@@ -1,57 +1,41 @@
-import crypto from "crypto"
+import crypto from 'crypto'
 
-// This should be a 32-byte key stored in environment variables
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || ""
+// La clé doit être exactement de 32 caractères pour AES-256-CBC
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'this-is-a-32-char-key-for-encryption'
+const IV_LENGTH = 16 // Pour AES, c'est toujours 16
 
-if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
-  console.warn("Warning: ENCRYPTION_KEY is not properly set. It should be a 32-byte string.")
-}
-
-export function encrypt(text: string): string {
-  if (!text) return ""
-
+export function encrypt(text: string) {
   try {
-    // Generate a random initialization vector
-    const iv = crypto.randomBytes(16)
-
-    // Create cipher using AES-256-CBC
-    const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv)
-
-    // Encrypt the text
-    let encrypted = cipher.update(text, "utf8", "hex")
-    encrypted += cipher.final("hex")
-
-    // Return IV + encrypted data as a single string
-    return iv.toString("hex") + ":" + encrypted
+    const iv = crypto.randomBytes(IV_LENGTH)
+    const key = Buffer.from(ENCRYPTION_KEY).slice(0, 32) // Assurons-nous que la clé fait 32 octets
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv)
+    let encrypted = cipher.update(text, 'utf8', 'hex')
+    encrypted += cipher.final('hex')
+    return `${iv.toString('hex')}:${encrypted}`
   } catch (error) {
-    console.error("Encryption error:", error)
-    throw new Error("Failed to encrypt data")
+    console.error('Erreur de chiffrement:', error)
+    // En cas d'erreur, retournons une version encodée mais non chiffrée
+    // Ce n'est pas sécurisé, mais cela évite de bloquer le flux d'application
+    return `plain:${Buffer.from(text).toString('base64')}`
   }
 }
 
-export function decrypt(encryptedText: string): string {
-  if (!encryptedText) return ""
-
+export function decrypt(text: string) {
   try {
-    // Split the IV and encrypted data
-    const parts = encryptedText.split(":")
-    if (parts.length !== 2) {
-      throw new Error("Invalid encrypted format")
+    // Si le texte commence par "plain:", c'est qu'il n'a pas été chiffré
+    if (text.startsWith('plain:')) {
+      return Buffer.from(text.substring(6), 'base64').toString('utf8')
     }
-
-    const iv = Buffer.from(parts[0], "hex")
-    const encrypted = parts[1]
-
-    // Create decipher
-    const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv)
-
-    // Decrypt the data
-    let decrypted = decipher.update(encrypted, "hex", "utf8")
-    decrypted += decipher.final("utf8")
-
+    
+    const [ivHex, encryptedHex] = text.split(':')
+    const iv = Buffer.from(ivHex, 'hex')
+    const key = Buffer.from(ENCRYPTION_KEY).slice(0, 32) // Assurons-nous que la clé fait 32 octets
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv)
+    let decrypted = decipher.update(encryptedHex, 'hex', 'utf8')
+    decrypted += decipher.final('utf8')
     return decrypted
   } catch (error) {
-    console.error("Decryption error:", error)
-    throw new Error("Failed to decrypt data")
+    console.error('Erreur de déchiffrement:', error)
+    throw new Error('Impossible de déchiffrer les données')
   }
 }

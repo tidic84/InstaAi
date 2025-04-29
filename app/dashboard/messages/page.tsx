@@ -1,13 +1,12 @@
-import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
-import { authOptions } from "@/lib/auth"
+import { getServerSessionSafe } from "@/lib/get-session"
 import { db } from "@/lib/db"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { MessagesList } from "@/components/dashboard/messages-list"
 
 export default async function MessagesPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSessionSafe()
 
   if (!session) {
     redirect("/login")
@@ -23,7 +22,7 @@ export default async function MessagesPage() {
         include: {
           messages: {
             orderBy: {
-              sentAt: "desc",
+              createdAt: "desc" // Utiliser createdAt au lieu de timestamp ou sentAt
             },
             take: 1,
           },

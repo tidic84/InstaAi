@@ -29,7 +29,7 @@ export async function getInstagramClient(accountId: string): Promise<IgApiClient
 
   try {
     // Decrypt password and login
-    const password = decrypt(account.encryptedPassword)
+    const password = decrypt(account.password)
     await ig.account.login(account.username, password)
 
     // Cache the client
@@ -58,16 +58,23 @@ export async function fetchNewMessages(accountId: string): Promise<Message[]> {
     const inbox = await ig.feed.directInbox().items()
 
     const newMessages: Message[] = []
+    
+    // Obtenir l'ID utilisateur Instagram
+    const account = await db.instagramAccount.findUnique({
+      where: { id: accountId },
+    })
+    
+    if (!account) {
+      throw new Error("Instagram account not found")
+    }
 
     // Process each thread/conversation
     for (const thread of inbox) {
       // Find or create conversation in our database
-      let conversation = await db.conversation.findUnique({
+      let conversation = await db.conversation.findFirst({
         where: {
-          instagramAccountId_participantUsername: {
-            instagramAccountId: accountId,
-            participantUsername: thread.users[0]?.username || "unknown",
-          },
+          participantUsername: thread.users[0]?.username || "unknown",
+          instagramAccountId: accountId,
         },
       })
 
@@ -86,12 +93,19 @@ export async function fetchNewMessages(accountId: string): Promise<Message[]> {
 
       // Process each message in the thread
       for (const item of threadItems) {
-        // Skip messages we've already processed
+        if (!item.text) continue; // Skip messages without text
+        
+        const messageTime = new Date(item.timestamp * 1000);
+        
+        // Check if we've already processed this message
         const existingMessage = await db.message.findFirst({
           where: {
             conversationId: conversation.id,
-            timestamp: new Date(item.timestamp * 1000),
-            content: item.text || "",
+            content: item.text,
+            createdAt: {
+              gte: new Date(messageTime.getTime() - 60000),
+              lte: new Date(messageTime.getTime() + 60000),
+            }
           },
         })
 
@@ -103,19 +117,19 @@ export async function fetchNewMessages(accountId: string): Promise<Message[]> {
         const message = await db.message.create({
           data: {
             conversationId: conversation.id,
-            content: item.text || "",
-            isFromUser: item.user_id !== ig.state.cookieUserId,
-            timestamp: new Date(item.timestamp * 1000),
+            content: item.text,
+            isFromUser: item.user_id.toString() !== account.instagramUserId,
+            createdAt: messageTime,
           },
         })
 
-        // If message is from user, generate AI response
+        // If message is from user, add to newMessages list to process later
         if (message.isFromUser) {
           newMessages.push(message)
         }
       }
 
-      // Update last checked time
+      // Update last message time
       await db.conversation.update({
         where: { id: conversation.id },
         data: { lastMessageAt: new Date() },
@@ -125,7 +139,7 @@ export async function fetchNewMessages(accountId: string): Promise<Message[]> {
     // Update account last checked time
     await db.instagramAccount.update({
       where: { id: accountId },
-      data: { lastChecked: new Date() },
+      data: { updatedAt: new Date() },
     })
 
     return newMessages

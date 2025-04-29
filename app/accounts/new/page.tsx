@@ -1,12 +1,11 @@
-import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
-import { authOptions } from "@/lib/auth"
+import { getServerSessionSafe } from "@/lib/get-session"
+import { NewAccountForm } from "@/components/accounts/new-account-form"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
-import { AddAccountForm } from "@/components/accounts/add-account-form"
 
 export default async function NewAccountPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSessionSafe()
 
   if (!session) {
     redirect("/login")
@@ -16,12 +15,10 @@ export default async function NewAccountPage() {
     <DashboardShell>
       <DashboardHeader
         heading="Ajouter un compte Instagram"
-        text="Connectez un nouveau compte Instagram à votre tableau de bord."
+        text="Connectez un nouveau compte Instagram pour gérer ses messages directs."
       />
-      <div className="grid gap-4">
-        <div className="rounded-lg border p-4">
-          <AddAccountForm userId={session.user.id as string} />
-        </div>
+      <div className="grid gap-8">
+        <NewAccountForm />
       </div>
     </DashboardShell>
   )

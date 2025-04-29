@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@auth/core": "latest",
-    "@auth/prisma-adapter": "latest",
+    "@auth/core": "0.34.2",
+    "@auth/prisma-adapter": "1.0.3",
     "@hookform/resolvers": "^3.9.1",
     "@mistralai/mistralai": "latest",
     "@next-auth/prisma-adapter": "^1.0.7",
@@ -53,9 +53,10 @@
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
     "instagram-private-api": "latest",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.454.0",
     "next": "15.2.4",
-    "next-auth": "latest",
+    "next-auth": "4.24.5",
     "next-themes": "^0.4.4",
     "nodemailer": "latest",
     "prisma": "latest",

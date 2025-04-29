@@ -1,8 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack: (config, { isServer }) => {
+    // Exclure les modules natifs qui posent problème lors du bundling
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        're2': false,
+        'instagram-private-api': false,
+      }
+    }
+    
+    return config
+  },
   // Assurez-vous que l'App Router est activé
   experimental: {
     appDir: true,
+    // Activer le middleware optionel pour bloquer l'accès aux API routes client-side
+    serverComponentsExternalPackages: ['instagram-private-api', 're2'],
   },
   // Activez l'analyse des pages pour le débogage
   output: 'standalone',

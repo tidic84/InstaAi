@@ -1,17 +1,22 @@
-import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
-import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { getServerSessionSafe } from "@/lib/get-session"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
-import { StatsCards } from "@/components/dashboard/stats-cards"
 import { RecentActivity } from "@/components/dashboard/recent-activity"
+import { StatsCards } from "@/components/dashboard/stats-cards"
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSessionSafe()
 
   if (!session) {
     redirect("/login")
+  }
+
+  // Vérifions que l'ID utilisateur est correctement défini
+  if (!session.user?.id) {
+    console.error("ID utilisateur manquant dans la session:", session)
+    redirect("/login?error=missing_user_id")
   }
 
   // Récupérer les statistiques de l'utilisateur
@@ -20,8 +25,8 @@ export default async function DashboardPage() {
     select: {
       _count: {
         select: {
-          igAccounts: true,
-        },
+          igAccounts: true
+        }
       },
       igAccounts: {
         select: {
@@ -30,12 +35,12 @@ export default async function DashboardPage() {
           isActive: true,
           _count: {
             select: {
-              conversations: true,
-            },
-          },
-        },
-      },
-    },
+              conversations: true
+            }
+          }
+        }
+      }
+    }
   })
 
   // Calculer les statistiques globales

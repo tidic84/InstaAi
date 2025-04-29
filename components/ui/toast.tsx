@@ -127,3 +127,13 @@ export {
   ToastClose,
   ToastAction,
 }
+
+// Hook pour utiliser le toast
+import {
+  useToast as useToastHook,
+  toast as toastFunction,
+} from "@/components/ui/use-toast-hook"
+
+// Exportation avec un nom différent pour éviter les conflits circulaires
+export const useToast = useToastHook
+export const toast = toastFunction

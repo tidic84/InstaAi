@@ -6,6 +6,7 @@ import { compare } from "bcrypt"
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 jours
   },
   pages: {
     signIn: "/login",
@@ -25,55 +26,52 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Trouver l'utilisateur par email
-          const user = await db.user.findFirst({
+          const user = await db.user.findUnique({
             where: { email: credentials.email },
-            select: { 
-              id: true, 
-              name: true, 
-              email: true,
-              password: true
-            }
           })
 
           if (!user || !user.password) {
             return null
           }
 
-          // Vérifier le mot de passe
-          const passwordValid = await compare(credentials.password, user.password)
-          
-          if (!passwordValid) {
+          const passwordMatch = await compare(credentials.password, user.password)
+
+          if (!passwordMatch) {
             return null
           }
 
           return {
             id: user.id,
             name: user.name,
-            email: user.email
+            email: user.email,
           }
         } catch (error) {
-          console.error("Erreur d'authentification:", error)
           return null
         }
       }
     })
   ],
   callbacks: {
-    async session({ token, session }) {
+    async jwt({ token, user }) {
+      if (user) {
+        // Assurez-vous que l'ID est correctement assigné au token
+        token.id = user.id
+        token.name = user.name
+        token.email = user.email
+        // Pour le débogage, ajoutons aussi un champ spécifique
+        token.userId = user.id
+      }
+      return token
+    },
+    async session({ session, token }) {
       if (token) {
-        session.user.id = token.id as string
+        // Assurez-vous que l'ID est correctement assigné à la session utilisateur
+        session.user.id = token.id as string || token.sub || token.userId as string
         session.user.name = token.name
         session.user.email = token.email
       }
       return session
-    },
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-      }
-      return token
     }
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: true, // Activons temporairement le mode debug pour voir les logs
 }
