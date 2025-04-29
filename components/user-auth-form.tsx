@@ -28,7 +28,7 @@ export function UserAuthForm({ isRegister = false }) {
 
     try {
       if (isRegister) {
-        // Vérification des mots de passe pour l'inscription
+        // Vérification des mots de passe
         if (password.length < 8) {
           setError("Le mot de passe doit contenir au moins 8 caractères.")
           setIsLoading(false)
@@ -41,7 +41,7 @@ export function UserAuthForm({ isRegister = false }) {
           return
         }
         
-        // Envoyer l'inscription avec le mot de passe
+        // Envoyer l'inscription
         const response = await fetch('/api/register', {
           method: 'POST',
           headers: {
@@ -53,16 +53,26 @@ export function UserAuthForm({ isRegister = false }) {
         const data = await response.json();
 
         if (!response.ok) {
-          setError(data.error || "Erreur lors de l'inscription");
+          setError(data.error || "Erreur lors de l'inscription")
+          setIsLoading(false)
+          return
+        }
+
+        setSuccess("Inscription réussie! Connexion en cours...")
+        
+        // Utiliser credentials au lieu d'email pour la connexion
+        const signInResult = await signIn("credentials", {
+          email,
+          password,
+          redirect: false,
+        });
+
+        if (signInResult?.error) {
+          console.error("Erreur de connexion après inscription:", signInResult.error)
+          setError("Inscription réussie mais erreur lors de la connexion automatique. Veuillez vous connecter manuellement.")
         } else {
-          setSuccess("Inscription réussie! Vous allez recevoir un email pour vous connecter.");
-          
-          // Connecter l'utilisateur après inscription
-          await signIn("email", {
-            email,
-            redirect: false,
-            callbackUrl: searchParams?.get("from") || "/dashboard",
-          });
+          // Redirection après connexion réussie
+          router.push("/dashboard")
         }
       } else {
         // Logique de connexion
