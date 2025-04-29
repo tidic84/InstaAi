@@ -2,6 +2,8 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Ajout d'un chemin de sortie explicite pour éviter l'avertissement
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -14,7 +16,7 @@ model User {
   name          String?
   email         String?   @unique
   emailVerified DateTime?
-  password      String    // Champ obligatoire pour préserver les données
+  password      String    // Non optionnel pour éviter les migrations risquées
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -80,7 +82,7 @@ model Conversation {
   participantUsername String
   lastMessageAt       DateTime @default(now())
   createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  updatedAt           DateTime @default(now())
 
   instagramAccount InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
   messages         Message[]
@@ -93,8 +95,10 @@ model Message {
   conversationId String
   content        String   @db.Text
   isFromUser     Boolean  @default(false)
+  // Ajout d'un champ pour l'horodatage qui sera utilisé dans l'interface
+  sentAt         DateTime @default(now())
   createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   aiResponses  AIResponse[]
@@ -108,7 +112,7 @@ model AIResponse {
   modifiedResponse  String?   @db.Text
   sentAt            DateTime?
   createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  updatedAt         DateTime  @default(now())
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 }
